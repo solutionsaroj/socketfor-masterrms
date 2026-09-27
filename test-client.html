@@ -30,6 +30,11 @@
       <label>Server URL (Live Render URL):</label>
       <input type="text" id="serverUrl" value="https://socketfor-masterrms.onrender.com">
     </div>
+
+    <div class="input-group">
+      <label>Secret Auth Token (🔒 Security):</label>
+      <input type="text" id="authToken" value="rms_secret_token_9f82d1">
+    </div>
     <button id="connectBtn" onclick="toggleConnect()">Connect</button>
 
     <div class="input-group" style="margin-top: 1.5rem;">
@@ -61,9 +66,11 @@
         return;
       }
       const url = document.getElementById('serverUrl').value.trim();
-      log(`Connecting to ${url}...`);
+      const token = document.getElementById('authToken').value.trim();
+      log(`Connecting to ${url} with auth token...`);
       
       socket = io(url, {
+        auth: { token },
         transports: ['websocket', 'polling']
       });
 

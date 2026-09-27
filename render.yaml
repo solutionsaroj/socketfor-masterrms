@@ -11,3 +11,5 @@ services:
         value: production
       - key: CLIENT_ORIGIN
         value: "*"
+      - key: SOCKET_AUTH_TOKEN
+        value: "rms_secret_token_9f82d1"

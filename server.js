@@ -23,6 +23,21 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
 });
 
+// Secret Auth Token to protect the server from unauthorized access
+const SOCKET_AUTH_TOKEN = process.env.SOCKET_AUTH_TOKEN || 'rms_secret_token_9f82d1';
+
+// Authentication Middleware: Only allow connections with valid secret token
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.headers['x-auth-token'];
+  if (token && token === SOCKET_AUTH_TOKEN) {
+    return next();
+  }
+  console.log(`[!] Rejected unauthorized connection: ${socket.id} (IP: ${socket.handshake.address})`);
+  const err = new Error('Unauthorized: Missing or invalid secret auth token');
+  err.data = { code: 'UNAUTHORIZED' };
+  return next(err);
+});
+
 // Root & Health Check Endpoints
 app.get('/', (req, res) => {
   res.json({
