@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Test Client</title>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 2rem; background: #0f172a; color: #f8fafc; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    h1 { font-size: 1.5rem; margin-top: 0; }
+    .input-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
+    input { width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
+    button { background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #2563eb; }
+    #status { padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-weight: bold; }
+    .connected { background: #065f46; color: #a7f3d0; }
+    .disconnected { background: #991b1b; color: #fecaca; }
+    #logs { background: #090d16; padding: 0.75rem; border-radius: 4px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; }
+    .log-item { margin-bottom: 0.25rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📡 Socket.IO Connection Tester</h1>
+    <div id="status" class="disconnected">Status: Disconnected</div>
+
+    <div class="input-group">
+      <label>Server URL (Local or Render Live URL):</label>
+      <input type="text" id="serverUrl" value="http://localhost:3000">
+    </div>
+    <button id="connectBtn" onclick="toggleConnect()">Connect</button>
+
+    <div class="input-group" style="margin-top: 1.5rem;">
+      <label>Send Message Event ('send_message'):</label>
+      <input type="text" id="msgInput" placeholder="Type test message...">
+    </div>
+    <button onclick="sendMsg()">Send</button>
+
+    <h3 style="margin-top: 1.5rem;">Logs:</h3>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    let socket = null;
+    const statusDiv = document.getElementById('status');
+    const logsDiv = document.getElementById('logs');
+
+    function log(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = 'log-item';
+      el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logsDiv.appendChild(el);
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    function toggleConnect() {
+      if (socket && socket.connected) {
+        socket.disconnect();
+        return;
+      }
+      const url = document.getElementById('serverUrl').value.trim();
+      log(`Connecting to ${url}...`);
+      
+      socket = io(url, {
+        transports: ['websocket', 'polling']
+      });
+
+      socket.on('connect', () => {
+        statusDiv.className = 'connected';
+        statusDiv.textContent = `Status: Connected (ID: ${socket.id})`;
+        document.getElementById('connectBtn').textContent = 'Disconnect';
+        log(`Connected! Socket ID: ${socket.id}`);
+      });
+
+      socket.on('welcome', (data) => {
+        log(`Welcome event received: ${JSON.stringify(data)}`);
+      });
+
+      socket.on('receive_message', (data) => {
+        log(`Received message: ${JSON.stringify(data)}`);
+      });
+
+      socket.on('disconnect', (reason) => {
+        statusDiv.className = 'disconnected';
+        statusDiv.textContent = 'Status: Disconnected';
+        document.getElementById('connectBtn').textContent = 'Connect';
+        log(`Disconnected: ${reason}`);
+      });
+
+      socket.on('connect_error', (err) => {
+        log(`Connection Error: ${err.message}`);
+      });
+    }
+
+    function sendMsg() {
+      const input = document.getElementById('msgInput');
+      if (!socket || !socket.connected) {
+        alert('Please connect first!');
+        return;
+      }
+      const text = input.value.trim();
+      if (!text) return;
+      socket.emit('send_message', { text: text });
+      log(`Sent: ${text}`);
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
